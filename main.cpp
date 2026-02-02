@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <random>
 #include <stdexcept>
 using namespace std;
 
@@ -27,23 +28,29 @@ class Character {
   virtual ~Character() {}
 
   void attack(Character &target) {
-    if (attackCount <= 0) throw runtime_error("No attack left!");
+    if (attackCount <= 0) 
+      throw runtime_error("No attack left!!!!");
     int damage = 10;
     if (target.isDefending) damage /= 2;
 
     target.hp -= damage;
+    if (target.hp < 0)
+      target.hp = 0;
     attackCount--;
     target.isDefending = false;
   }
 
   void strongAttack(Character &target) {
-    if (strongAttackCount <= 0) throw runtime_error("No strong attack left!");
+    if (strongAttackCount <= 0) 
+      throw runtime_error("No strong attack left!");
 
     int damage = 20;
     if (target.isDefending)
       damage /= 2;
 
     target.hp -= damage;
+    if (target.hp < 0)
+      target.hp = 0;
     strongAttackCount--;
     target.isDefending = false;
   }
@@ -64,10 +71,41 @@ class Character {
     potionCount--;
   }
 
+  // auto attack for enemy AI
+  void autoAttack(Character &target) {
+    random_device rd;
+    mt19937 rng(rd());
+
+    uniform_int_distribution<int> dist(1, 4);
+    int choice = dist(rng);
+
+    switch (choice)
+    {
+    case 1:
+      attack(target);
+      break;
+    
+    case 2:
+      strongAttack(target);
+      break;
+
+    case 3:
+      defend();
+      break;
+    
+    case 4:
+      usePotion();
+      break;
+
+    default:
+      break;
+    }
+  }
+
   int getHP() const { return hp; }
 
   bool isFinished() const {
-    return attackCount == 0 && strongAttackCount == 0 && defenseCount == 0 && potionCount == 0;
+    return (attackCount == 0 && strongAttackCount == 0 && defenseCount == 0 && potionCount == 0) || hp <= 0;
   }
 
   bool operator > (Character &other) {
@@ -83,7 +121,7 @@ class Hero : public Character {
 };
 
 class Enemy : public Character {
-  public: 
+  public:
     Enemy() : Character("Enemy", 100, 4, 5, 3, 3) {}
 };
 
@@ -131,7 +169,7 @@ int main() {
       }
 
       if (!enemy.isFinished()) {
-        enemy.attack(hero);
+        enemy.autoAttack(hero);
       }
 
       showHP(hero);
