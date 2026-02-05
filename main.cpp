@@ -137,6 +137,10 @@ class Character {
     return hp > other.hp;
   }
 
+  bool operator == (Character &other) {
+    return hp == other.hp;
+  }
+
   friend void showName(Character &c);
   friend void showHP(Character &c);
   friend void showCounts(Character &c);
@@ -220,6 +224,11 @@ int main() {
   }
 
   cout << "\n========= Battle Over ===========\n";
+
+  if (hero == enemy) {
+    cout << "Draw! No One Wins!" << endl;
+  }
+
   if (hero > enemy) {
     cout << "Hero Wins!\n";
   } else {
