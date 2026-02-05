@@ -2,241 +2,162 @@
 #include <string>
 #include <random>
 #include <stdexcept>
+
 using namespace std;
 
-class Character {
-  protected:
-    string name;
-    int hp;
-    int attackCount;
-    int strongAttackCount;
-    int defenseCount;
-    int potionCount;
-    bool isDefending;
+class Character
+{
+protected:
+  string name;
+  int hp, atk, satk, def, pot;
+  bool isBlocking;
 
-  public:
-    Character(string n, int h, int a, int sa, int d, int p) {
-      name = n;
-      hp = h;
-      attackCount = a;
-      strongAttackCount = sa;
-      defenseCount = d;
-      potionCount = p;
-      isDefending = false;
+public:
+  Character(string n, int h, int a, int sa, int d, int p)
+      : name(n), hp(h), atk(a), satk(sa), def(d), pot(p), isBlocking(false) {}
+
+  int commitAction(int choice)
+  {
+    if (choice == 1)
+    {
+      if (atk <= 0)
+        throw runtime_error("No Attack charges!");
+      atk--;
+      return 10;
     }
-
-  virtual ~Character() {}
-
-  void attack(Character &target) {
-    if (attackCount <= 0) 
-      throw runtime_error("No attack left!");
-    int damage = 10;
-    if (target.isDefending) damage /= 2;
-
-    target.hp -= damage;
-    if (target.hp < 0)
-      target.hp = 0;
-    attackCount--;
-    target.isDefending = false;
-  }
-
-  void strongAttack(Character &target) {
-    if (strongAttackCount <= 0) 
-      throw runtime_error("No strong attack left!");
-
-    int damage = 20;
-    if (target.isDefending)
-      damage /= 2;
-
-    target.hp -= damage;
-    if (target.hp < 0)
-      target.hp = 0;
-    strongAttackCount--;
-    target.isDefending = false;
-  }
-
-  void defend() {
-    if (defenseCount <= 0)
-      throw runtime_error("No defense left!");
-
-    isDefending = true;
-    defenseCount--;
-  }
-
-  void usePotion() {
-    if (potionCount <= 0)
-      throw runtime_error("No potion left!");
-
-    hp += 20;
-    potionCount--;
-  }
-
-  int randomNumber() {
-    random_device rd;
-    mt19937 rng(rd());
-
-    uniform_int_distribution<int> dist(1, 4);
-    int random = dist(rng);
-
-    return random;
-  }
-
-  // auto attack for enemy AI
-  void autoAttack(Character &target) {
-    if (isFinished()) return;
-
-    bool moveMade = false;
-    while (!moveMade) {
-      int choice = randomNumber();
-
-      switch (choice) {
-        case 1:
-          if (attackCount > 0) {
-            attack(target);
-            cout << "\nEnemy used Attack!\n\n";
-            moveMade = true;
-          }
-          break;
-        case 2:
-          if (strongAttackCount > 0) {
-            strongAttack(target);
-            cout << "\nEnemy used Strong Attack!\n\n";
-            moveMade = true;
-          }
-          break;
-        case 3:
-          if (defenseCount > 0) {
-            defend();
-            cout << "\nEnemy is Defending!\n\n";
-            moveMade = true;
-          }
-          break;
-        case 4:
-          if (potionCount > 0) {
-            usePotion();
-            cout << "\nEnemy used a Potion!\n\n";
-            moveMade = true;
-          }
-          break;
-      }
+    if (choice == 2)
+    {
+      if (satk <= 0)
+        throw runtime_error("No Strong Attack charges!");
+      satk--;
+      return 20;
     }
-}
+    if (choice == 3)
+    {
+      if (def <= 0)
+        throw runtime_error("No Defense charges!");
+      def--;
+      isBlocking = true;
+      return 0;
+    }
+    if (choice == 4)
+    {
+      if (pot <= 0)
+        throw runtime_error("No Potions left!");
+      pot--;
+      hp += 20;
+      return -1;
+    }
+    throw runtime_error("Invalid Choice!");
+  }
 
+  void applyDamage(int dmg)
+  {
+    if (dmg <= 0)
+      return;
+    if (isBlocking)
+    {
+      dmg /= 2;
+      cout << ">> " << name << " blocked! Damage reduced to " << dmg << endl;
+    }
+    hp -= dmg;
+    if (hp < 0)
+      hp = 0;
+  }
+
+  void refresh() { isBlocking = false; }
+
+  void printStats() const
+  {
+    cout << name << ": " << hp << " HP | Atk:" << atk << " S.Atk:" << satk << " Def:" << def << " Pot:" << pot << endl;
+  }
+
+  bool alive() const { return hp > 0; }
+  bool canMove() const { return (atk > 0 || satk > 0 || def > 0 || pot > 0); }
   string getName() const { return name; }
-  int getHP() const { return hp; }
-  int getAttackCount() const { return attackCount; }
-  int getStrongAttackCount() const { return strongAttackCount; }
-  int getDefenseCount() const { return defenseCount; }
-  int getPotionCount() const { return potionCount; }
-
-  bool isFinished() const {
-    return (attackCount == 0 && strongAttackCount == 0 && defenseCount == 0 && potionCount == 0) || hp <= 0;
-  }
-
-  bool operator > (Character &other) {
-    return hp > other.hp;
-  }
-
-  bool operator == (Character &other) {
-    return hp == other.hp;
-  }
-
-  friend void showName(Character &c);
-  friend void showHP(Character &c);
-  friend void showCounts(Character &c);
+  bool operator>(const Character &other) const { return hp > other.hp; }
 };
 
-class Hero : public Character {
-  public:
-    Hero() : Character("Hero", 100, 4, 5, 3, 3) {}
+class Hero : public Character
+{
+public:
+  Hero() : Character("Hero", 100, 4, 5, 3, 3) {}
+};
+class Enemy : public Character
+{
+public:
+  Enemy() : Character("Enemy", 100, 4, 5, 3, 3) {}
 };
 
-class Enemy : public Character {
-  public:
-    Enemy() : Character("Enemy", 100, 4, 5, 3, 3) {}
-};
+int main()
+{
+  Hero h;
+  Enemy e;
+  mt19937 rng(random_device{}());
 
-void showHP(Character &c) {
-  cout << c.name << " HP: " << c.hp << endl;
-}
+  while (h.alive() && e.alive() && (h.canMove() || e.canMove()))
+  {
+    cout << "\n--- BATTLE STATUS ---" << endl;
+    h.printStats();
+    e.printStats();
 
-template <typename T>
-void displayCount(const T &c) {
-  cout << c.getName() << " : Attack Count Left: " << c.getAttackCount() << endl;
-  cout << c.getName() << " : Strong Attack Count Left: " << c.getStrongAttackCount() << endl;
-  cout << c.getName() << " : Defense Count Left: " << c.getDefenseCount() << endl;
-  cout << c.getName() << " : Potion Count Left: " << c.getPotionCount() << endl << endl;
-}
+    try
+    {
+      cout << "\nChoices: 1:Atk, 2:S.Atk, 3:Def, 4:Pot" << endl;
+      cout << "Choice: ";
+      int hChoice;
+      if (!(cin >> hChoice))
+        throw runtime_error("Input error!");
 
-template <typename T>
-void displayStats(const T &c) {
-  cout << "HP: " << c.getHP() << endl;
-}
+      int hDmg = h.commitAction(hChoice);
 
-int main() {
-  Hero hero;
-  Enemy enemy;
-
-  int choice;
-  while (!hero.isFinished() && !enemy.isFinished()) {
-    try {
-      cout << "\n1. Attack \n2. Strong Attack \n3. Defense \n4. Potion \nChoose: ";
-      cin >> choice;
-
-      if (cin.fail())
-        throw runtime_error("Invalid Input!");
-      
-      switch (choice) {
-        case 1:
-          hero.attack(enemy);
-          break;
-        
-        case 2:
-          hero.strongAttack(enemy);
-          break;
-        
-        case 3:
-          hero.defend();
-          break;
-        
-        case 4:
-          hero.usePotion();
-          break;
-
-        default:
-          throw runtime_error("Wrong Choice!!!");
+      int eChoice = 0, eDmg = 0;
+      bool eValid = false;
+      while (!eValid)
+      {
+        eChoice = uniform_int_distribution<int>(1, 4)(rng);
+        try
+        {
+          eDmg = e.commitAction(eChoice);
+          eValid = true;
+        }
+        catch (...)
+        {
+        }
       }
 
-      if (!enemy.isFinished()) {
-        enemy.autoAttack(hero);
-      }
+      cout << "\n[RESULT]" << endl;
+      if (hChoice == 4)
+        cout << ">> Hero used a Potion!" << endl;
+      if (eChoice == 4)
+        cout << ">> Enemy used a Potion!" << endl;
 
-      showHP(hero);
-      showHP(enemy);
-      cout << endl;
-      displayCount(hero);
-      displayCount(enemy);
-    } catch (exception &e) {
-      cout << "Error: " << e.what() << endl;
+      e.applyDamage(hDmg);
+      h.applyDamage(eDmg);
+
+      if (hDmg > 0)
+        cout << ">> Hero dealt " << hDmg << " base damage." << endl;
+      if (eDmg > 0)
+        cout << ">> Enemy dealt " << eDmg << " base damage." << endl;
+
+      h.refresh();
+      e.refresh();
+    }
+    catch (const exception &err)
+    {
+      cout << "Error: " << err.what() << endl;
       cin.clear();
       cin.ignore(100, '\n');
     }
   }
 
-  cout << "\n========= Battle Over ===========\n";
-
-  if (hero == enemy) {
-    cout << "Draw! No One Wins!" << endl;
-  }
-
-  if (hero > enemy) {
-    cout << "Hero Wins!\n";
-  } else {
-    cout << "Enemy Wins!\n";
-  }
-
-  cout << "Hero HP: " << hero.getHP() << endl;
-  cout << "Enemy HP: " << enemy.getHP() << endl;
+  cout << "\n=== FINAL RESULT ===" << endl;
+  if (h > e)
+    cout << "Winner: Hero!" << endl;
+  else if (e > h)
+    cout << "Winner: Enemy!" << endl;
+  else
+    cout << "It's a Draw!" << endl;
 
   return 0;
 }
