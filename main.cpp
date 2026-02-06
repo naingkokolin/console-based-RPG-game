@@ -2,6 +2,7 @@
 #include <string>
 #include <random>
 #include <stdexcept>
+#include <conio.h>
 
 using namespace std;
 
@@ -67,16 +68,35 @@ public:
 
   void refresh() { isBlocking = false; }
 
-  void printStats() const
-  {
-    cout << name << ": " << hp << " HP | Atk:" << atk << " S.Atk:" << satk << " Def:" << def << " Pot:" << pot << endl;
-  }
+  int getHP() const { return hp; }
+  int getAtk() const { return atk; }
+  int getStrongAtk() const { return satk; }
+  int getDef() const { return def; }
+  int getPot() const { return pot; }
 
   bool alive() const { return hp > 0; }
   bool canMove() const { return (atk > 0 || satk > 0 || def > 0 || pot > 0); }
   string getName() const { return name; }
   bool operator>(const Character &other) const { return hp > other.hp; }
+  friend void showHP(Character &c);
 };
+
+void showHP(Character &character) {
+  cout << "\n"
+       << character.getName() << " HP: " << character.hp;
+}
+
+template <typename T>
+void printStats(const T &c)
+{
+  cout << c.getName() << ": "
+       << c.getHP() << " HP | "
+       << "Atk:" << c.getAtk() << " "
+       << "S.Atk:" << c.getStrongAtk() << " "
+       << "Def:" << c.getDef() << " "
+       << "Pot:" << c.getPot()
+       << endl;
+}
 
 class Hero : public Character
 {
@@ -98,8 +118,8 @@ int main()
   while (h.alive() && e.alive() && (h.canMove() || e.canMove()))
   {
     cout << "\n--- BATTLE STATUS ---" << endl;
-    h.printStats();
-    e.printStats();
+    printStats(h);
+    printStats(e);
 
     try
     {
@@ -121,8 +141,11 @@ int main()
           eDmg = e.commitAction(eChoice);
           eValid = true;
         }
-        catch (...)
+        catch (exception &e)
         {
+          cout << "Error: " << e.what() << endl;
+          cin.clear();
+          cin.ignore(100, '\n');
         }
       }
 
@@ -152,12 +175,14 @@ int main()
   }
 
   cout << "\n=== FINAL RESULT ===" << endl;
+  showHP(h);
+  showHP(e);
   if (h > e)
-    cout << "Winner: Hero!" << endl;
+    cout << "\nWinner: Hero!" << endl;
   else if (e > h)
-    cout << "Winner: Enemy!" << endl;
+    cout << "\nWinner: Enemy!" << endl;
   else
-    cout << "It's a Draw!" << endl;
+    cout << "\nIt's a Draw!" << endl;
 
   return 0;
 }
